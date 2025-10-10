@@ -1,5 +1,7 @@
 # Ray Agents
-API for running LLM agents (LangGraph, CrewAI, etc.) with distributed tool execution on Ray
+API for running LLM agents (LangGraph, CrewAI, etc.) with distributed tool execution on Ray. 
+
+This is an experimental package and currently in active development.
 
 ## License
 
