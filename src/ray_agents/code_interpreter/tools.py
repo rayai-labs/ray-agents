@@ -3,6 +3,7 @@
 import logging
 import time
 import uuid
+from typing import cast
 
 import ray
 
@@ -39,7 +40,7 @@ def _get_or_create_executor(
         # Try to get existing actor
         executor = ray.get_actor(actor_name, namespace=ACTOR_NAMESPACE)
         logger.debug(f"Found existing executor for session {session_id}")
-        return executor
+        return cast(ray.actor.ActorHandle, executor)
     except ValueError:
         # Actor doesn't exist, create new one
         logger.info(f"Creating new executor for session {session_id}")
@@ -53,7 +54,7 @@ def _get_or_create_executor(
             dockerfile=dockerfile,
             environment=environment,
         )
-        return executor
+        return cast(ray.actor.ActorHandle, executor)
 
 
 @ray.remote
