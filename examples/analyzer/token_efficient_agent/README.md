@@ -41,13 +41,29 @@ Note: First run takes 3-5 minutes to build the Docker image.
 ### Architecture
 
 ```
-Agent (Host) → Generates code, manages conversation
+CLI (Host) → Starts MCP server + manages Ray
     ↓
-Sandbox (gVisor Container) → Executes code with volume mounts
-    ├── /mnt/datasets    (mounted from ../datasets/)
-    ├── /mnt/servers     (mounted from ../servers/)
-    └── Persistent Python session
+┌─────────────────────────────────────┐
+│  Agent → Generates code             │
+│    ↓                                │
+│  Sandbox (gVisor) → Executes code   │
+│    ├── /mnt/servers (MCP clients)   │
+│    └── Persistent Python session    │
+└──────────┬──────────────────────────┘
+           │
+      Unix socket (/tmp/mcp.sock)
+           │
+    MCP Sidecar Proxy (auto-started)
+           │
+    MCP Server (Ray Serve, :8265)
+           │
+    Datasets (../datasets/)
 ```
+
+The CLI automatically:
+1. Starts MCP server on port 8265
+2. Creates sidecar proxy container when needed
+3. Connects sandbox to datasets via MCP
 
 ### Token Efficiency
 
@@ -62,40 +78,45 @@ Sandbox (gVisor Container) → Executes code with volume mounts
 ```
 You: What datasets are available?
 
-Agent: I'll check for you.
+Agent: I'll check the datasets via MCP.
 
 ```python
-# Explore available MCP clients
-import os
-print(os.listdir('/mnt/servers'))  # ['datasets_client', 'mcp_client.py', ...]
-
-# Discover tools in datasets_client
-print(os.listdir('/mnt/servers/datasets_client'))  # ['list_datasets.py', ...]
-
-# Import and use only what's needed
 import sys
 sys.path.append('/mnt')
 from servers.datasets_client import list_datasets
 
-result = list_datasets()
-print(result['datasets'])
+datasets = list_datasets()
+print(datasets)
 ```
 
 [Executing code...]
-car_price_prediction_.csv
+{'datasets': ['car_price_prediction_.csv']}
 
 You: Load it and show summary stats
 
-Agent: [Generates code that uses the same session - df persists!]
+Agent: [Generates code that loads the dataset via MCP]
+
+```python
+from servers.datasets_client import import_dataset
+from io import StringIO
+import pandas as pd
+
+result = import_dataset('car_price_prediction_.csv')
+df = pd.read_csv(StringIO(result['content']))
+print(df.describe())
+```
+
+[Variables persist across executions!]
 ```
 
 ## Features
 
 - **Streaming responses** - See agent thinking in real-time
 - **Session persistence** - Variables persist across turns
-- **Volume mounts** - Direct access to datasets (no uploads)
-- **MCP tools** - Secure filesystem operations
-- **Sandboxed** - Runs in gVisor-isolated container
+- **MCP integration** - Secure dataset access via proxy
+- **Auto-managed sidecar** - Proxy container started automatically
+- **Sandboxed** - Complete network isolation with gVisor
+- **Token efficient** - Only summaries in context, not raw data
 
 ## Commands
 
@@ -106,14 +127,48 @@ Agent: [Generates code that uses the same session - df persists!]
 ## Files
 
 - `agent.py` - Core agent with streaming and code execution
-- `cli.py` - Interactive terminal interface
-- `Dockerfile` - Container image with Node.js + Python packages
+- `cli.py` - Interactive terminal interface (starts MCP server)
+- `Dockerfile` - Container image with Python data analysis packages
+- `../mcp_serve.py` - Ray Serve MCP server
+- `../servers/` - MCP client libraries (mounted in sandbox)
 
 ## Requirements
 
-- Docker with gVisor (recommended)
+- Docker with gVisor (required for security)
 - OpenAI API key (in .env file at project root)
 - Python packages: ray, openai, python-dotenv, docker
+
+### gVisor Setup for MCP
+
+To enable network-isolated sandboxes with MCP access, configure gVisor to allow Unix socket connections.
+
+Add to `/etc/docker/daemon.json`:
+```json
+{
+  "runtimes": {
+    "runsc": {
+      "path": "/usr/local/bin/runsc",
+      "runtimeArgs": [
+        "--fsgofer-host-uds"
+      ]
+    }
+  }
+}
+```
+
+Then restart Docker:
+```bash
+# macOS
+killall Docker && open /Applications/Docker.app
+
+# Linux
+sudo systemctl restart docker
+```
+
+**Why this is needed:**
+- `--fsgofer-host-uds`: Allows gVisor containers to connect to Unix sockets on the host
+- Enables `network_mode: none` (complete isolation) + Unix socket communication with sidecar
+- Sidecar enforces MCP allowlist while sandbox has zero network access
 
 ## Customization
 
