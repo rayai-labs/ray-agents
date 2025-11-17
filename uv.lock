@@ -1670,6 +1670,7 @@ dependencies = [
 [package.optional-dependencies]
 code-interpreter = [
     { name = "docker" },
+    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -1691,6 +1692,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ray", extras = ["serve"], specifier = ">=2.49.2" },
+    { name = "requests", marker = "extra == 'code-interpreter'", specifier = ">=2.31.0" },
 ]
 provides-extras = ["code-interpreter"]
 
