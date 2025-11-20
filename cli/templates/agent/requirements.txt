@@ -1,0 +1,3 @@
+ray[serve]
+fastapi
+python-dotenv
