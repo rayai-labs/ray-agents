@@ -1,3 +1,2 @@
-ray[serve]
-fastapi
 python-dotenv
+ray-agents

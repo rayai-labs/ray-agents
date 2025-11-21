@@ -37,7 +37,8 @@ def init(project_name: str, project_type: str):
         click.echo("\nNext steps:")
         click.echo(f"  cd {project_name}")
         click.echo("  # Edit .env file with your API keys")
-        click.echo("  # Customize agent.py with your agent logic")
+        click.echo("  # Create your first agent: rayai create-agent <name>")
+        click.echo("  # Deploy agents: rayai serve")
 
     except Exception as e:
         click.echo(f"Error: Failed to create project: {e}")

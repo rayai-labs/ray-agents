@@ -3,10 +3,11 @@
 
 Usage:
     rayai init <project_name> [--type=agent]
+    rayai serve [--port=8000] [--agent=<name>]
 """
 
 import click
-from commands import init
+from commands import create_agent, init, serve
 
 
 @click.group()
@@ -17,6 +18,8 @@ def cli():
 
 
 cli.add_command(init.init)
+cli.add_command(serve.serve)
+cli.add_command(create_agent.create_agent)
 
 
 if __name__ == "__main__":
