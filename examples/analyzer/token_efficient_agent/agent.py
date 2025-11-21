@@ -13,6 +13,8 @@ import sys
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
+import time
+from token_logger import log_token_usage
 
 import ray
 from openai import OpenAI
@@ -77,7 +79,7 @@ class TokenEfficientAgent:
         mcp_server_url: str = "http://localhost:8000/mcp",
         dockerfile_path: str | None = None,
         image: str | None = None,
-        model: str = "gpt-4o",
+        model: str = "llama3.2:1b",
         max_iterations: int = 15,
     ):
         """Initialize the token-efficient agent.
@@ -174,6 +176,7 @@ Work step-by-step. Variables persist, imports don't."""
             iteration += 1
 
             try:
+                start_ts = time.time()
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
@@ -184,6 +187,28 @@ Work step-by-step. Variables persist, imports don't."""
                     tool_choice="auto",
                     temperature=0,
                 )
+                latency_ms = int((time.time() - start_ts) * 1000)
+
+                # Attempt to log token usage. We pass the raw response object; token_logger
+                # will do best-effort extraction. For safety, only pass a small extra dict.
+                try:
+                    # If response is a pydantic/model object, the token_logger will handle it.
+                    llm_record = {}
+                    # Try to convert to dict-like if possible
+                    try:
+                        # many clients provide .model or .dict()/model_dump
+                        if hasattr(response, "model") or hasattr(response, "usage"):
+                            # let token_logger inspect attributes
+                            llm_record = response
+                        else:
+                            # As fallback, use dict-ish access if available
+                            llm_record = response
+                    except Exception:
+                        llm_record = response
+                    log_token_usage(llm_record, label="planner", extra={"session_id": self.session_id, "latency_ms": latency_ms})
+                except Exception:
+                    # Never raise logging errors to the agent flow
+                    pass
             except Exception as e:
                 yield f"\n[Error calling OpenAI: {e}]\n"
                 return

@@ -40,3 +40,5 @@ blog_draft*.md
 # claude
 devcontainer.json
 .claude/
+
+examples/analyzer/token_efficient_agent/logs/usage.log

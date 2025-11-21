@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+import uuid
 
 import ray
 from dotenv import load_dotenv
@@ -88,9 +89,11 @@ def main():
     print()
 
     print("Creating agent...")
+    unique_session = f"cli-session-{uuid.uuid4().hex[:8]}"
+
     # Use host.docker.internal for Docker Desktop on macOS
     agent = TokenEfficientAgent(
-        session_id="cli-session",
+        session_id=unique_session,
         datasets_path=str(datasets_path),
         servers_path=str(servers_path),
         mcp_server_url="http://host.docker.internal:8265/mcp",
