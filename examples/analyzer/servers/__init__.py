@@ -1,4 +1,4 @@
-"""MCP Servers for Ray Agents examples.
+"""MCP Servers for Agentic-Ray examples.
 
 This package provides wrappers for MCP servers. Tools are organized by server,
 with each tool available as a separate Python function.

@@ -1,7 +1,7 @@
 .PHONY: setup-gvisor-macos verify-gvisor restart-docker debug-gvisor help
 
 help:
-	@echo "Ray Agents - gVisor Setup"
+	@echo "Agentic-Ray - gVisor Setup"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make setup-gvisor-macos  - Install gVisor on macOS (Docker Desktop)"

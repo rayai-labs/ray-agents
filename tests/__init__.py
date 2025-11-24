@@ -1,1 +1,1 @@
-"""Tests for ray-agents."""
+"""Tests for agentic-ray."""

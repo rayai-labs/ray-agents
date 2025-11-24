@@ -9,7 +9,7 @@ class AgentAdapter(ABC):
     """
     Base adapter for agent frameworks.
 
-    Subclass this to integrate Ray Agents with different agent frameworks
+    Subclass this to integrate Agentic-Ray with different agent frameworks
     (LangGraph, CrewAI, Autogen, PydanticAI, etc.). The adapter wraps the
     framework's native execution while enabling Ray's distributed runtime
     for tool execution.
