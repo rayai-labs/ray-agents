@@ -13,17 +13,22 @@ import click
 from ray_agents.decorators import get_agent_resources, has_resource_config
 
 
-@click.command()
+@click.command(
+    context_settings={"allow_extra_args": True, "allow_interspersed_args": False}
+)
 @click.argument("project_path", default=".")
 @click.option("--port", default=8000, help="Port to serve on")
 @click.option("--agents", help="Deploy specific agents (comma-separated)")
-def serve(project_path: str, port: int, agents: str):
+@click.pass_context
+def serve(ctx, project_path: str, port: int, agents: str):
     """Serve agents using Ray Serve."""
     project_dir = Path(project_path).resolve()
 
     if not project_dir.exists():
         click.echo(f"Error: Project directory not found: {project_dir}")
         return
+
+    cli_resources = _parse_resource_flags(ctx.args)
 
     if not _ensure_dependencies():
         return
@@ -38,7 +43,72 @@ def serve(project_path: str, port: int, agents: str):
     if not agents_to_deploy:
         return
 
-    _deploy_agents(agents_to_deploy, port)
+    _deploy_agents(agents_to_deploy, port, cli_resources)
+
+
+def _parse_resource_flags(extra_args: list[str]) -> dict[str, dict[str, Any]]:
+    """
+    Parse CLI resource flags with format --{agent-name}-{resource-type}={value}.
+
+    Args:
+        extra_args: List of extra CLI arguments
+
+    Returns:
+        Dict mapping agent names to their resource configurations
+    """
+    cli_resources: dict[str, dict[str, Any]] = {}
+    resource_types = ["num-cpus", "memory", "num-replicas", "num-gpus"]
+
+    for arg in extra_args:
+        if not arg.startswith("--"):
+            continue
+
+        if "=" not in arg:
+            click.echo(
+                f"Warning: Ignoring invalid resource flag '{arg}' (missing =value)"
+            )
+            continue
+
+        flag_name, value = arg[2:].split("=", 1)
+
+        if "-" not in flag_name:
+            continue
+
+        parts = flag_name.split("-")
+        if len(parts) < 2:
+            continue
+
+        resource_type: str | None = None
+        agent_name: str | None = None
+
+        for rt in resource_types:
+            if flag_name.endswith(f"-{rt}"):
+                resource_type = rt
+                agent_name = flag_name[: -len(f"-{rt}")]
+                break
+
+        if resource_type is None or agent_name is None:
+            continue
+
+        try:
+            parsed_value: int | str
+            if resource_type in ["num-cpus", "num-replicas", "num-gpus"]:
+                parsed_value = int(value)
+            else:
+                parsed_value = value
+
+            decorator_param = resource_type.replace("-", "_")
+
+            if agent_name not in cli_resources:
+                cli_resources[agent_name] = {}
+            cli_resources[agent_name][decorator_param] = parsed_value
+
+        except ValueError:
+            click.echo(
+                f"Warning: Invalid value '{value}' for {flag_name}, expected {'integer' if resource_type in ['num-cpus', 'num-replicas', 'num-gpus'] else 'string'}"
+            )
+
+    return cli_resources
 
 
 def _ensure_dependencies() -> bool:
@@ -177,13 +247,99 @@ def _get_agent_resources_with_defaults(agent_class: Any) -> dict[str, Any]:
         click.echo(f"   Using custom resources: {resources}")
         return resources
     else:
-        # Default resources for basic agent deployment
         defaults = {"num_cpus": 1, "memory": "2GB", "num_replicas": 1, "num_gpus": 0}
         click.echo(f"   Using default resources: {defaults}")
         return defaults
 
 
-def _deploy_agents(agents: dict[str, Any], port: int):
+def _merge_resources_with_cli_override(
+    agent_class: Any,
+    agent_name: str,
+    cli_resources: dict[str, dict[str, Any]],
+    deployed_agents: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Merge CLI resource flags with decorator defaults using field-by-field precedence.
+
+    Args:
+        agent_class: Agent class (may have @ray_resources decorator)
+        agent_name: Name of the agent
+        cli_resources: Parsed CLI resource flags
+        deployed_agents: Dict of agents being deployed (for validation)
+
+    Returns:
+        Final resource configuration with CLI overrides applied
+    """
+    if has_resource_config(agent_class):
+        base_resources = get_agent_resources(agent_class).copy()
+        source = "decorator"
+    else:
+        base_resources = {
+            "num_cpus": 1,
+            "memory": "2GB",
+            "num_replicas": 1,
+            "num_gpus": 0,
+        }
+        source = "defaults"
+
+    cli_overrides = cli_resources.get(agent_name, {})
+
+    if agent_name not in deployed_agents:
+        if cli_overrides:
+            for resource_key in cli_overrides.keys():
+                flag_name = f"--{agent_name}-{resource_key.replace('_', '-')}"
+                click.echo(
+                    f"Warning: Resource flag '{flag_name}' specified for '{agent_name}' but '{agent_name}' not deployed"
+                )
+        return base_resources
+
+    final_resources = base_resources.copy()
+    overridden_fields = []
+
+    for resource_key, cli_value in cli_overrides.items():
+        if resource_key in final_resources:
+            final_resources[resource_key] = cli_value
+            overridden_fields.append(resource_key)
+        else:
+            click.echo(
+                f"Warning: Unknown resource '{resource_key}' for agent '{agent_name}'"
+            )
+
+    if overridden_fields:
+        click.echo(f"   Using {source} with CLI overrides: {overridden_fields}")
+        click.echo(f"   Final resources: {final_resources}")
+    else:
+        click.echo(f"   Using {source}: {final_resources}")
+
+    return final_resources
+
+
+def _validate_cli_resource_flags(
+    cli_resources: dict[str, dict[str, Any]], discovered_agents: dict[str, Any]
+) -> None:
+    """
+    Warn about CLI resource flags for agents that don't exist.
+
+    Args:
+        cli_resources: Parsed CLI resource flags
+        discovered_agents: Dict of discovered agents
+    """
+    for agent_name in cli_resources.keys():
+        if agent_name not in discovered_agents:
+            flags = []
+            for resource_key in cli_resources[agent_name].keys():
+                flag_name = f"--{agent_name}-{resource_key.replace('_', '-')}"
+                flags.append(flag_name)
+
+            click.echo(
+                f"Warning: Resource flags {', '.join(flags)} reference unknown agent '{agent_name}'"
+            )
+            click.echo(f"   Available agents: {', '.join(discovered_agents.keys())}")
+
+
+def _deploy_agents(
+    agents: dict[str, Any], port: int, cli_resources: dict[str, dict[str, Any]]
+):
     """Deploy agents on Ray Serve with single /chat endpoint."""
     try:
         import ray
@@ -196,6 +352,7 @@ def _deploy_agents(agents: dict[str, Any], port: int):
             ray.init(ignore_reinit_error=True)
 
         serve.start(detached=True, http_options={"host": "0.0.0.0", "port": port})
+        _validate_cli_resource_flags(cli_resources, agents)
         deployed_endpoints = []
 
         for agent_name, agent_info in agents.items():
@@ -208,7 +365,9 @@ def _deploy_agents(agents: dict[str, Any], port: int):
                 continue
 
             click.echo(f"Configuring agent '{agent_name}':")
-            resources = _get_agent_resources_with_defaults(agent_class)
+            resources = _merge_resources_with_cli_override(
+                agent_class, agent_name, cli_resources, agents
+            )
 
             ray_actor_options = {
                 "num_cpus": resources["num_cpus"],
