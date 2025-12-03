@@ -34,7 +34,7 @@ def create_agent(agent_name: str):
         click.echo(f"Location: {agent_dir}")
         click.echo("\nNext steps:")
         click.echo(f"  Edit agents/{agent_name}/agent.py to implement your logic")
-        click.echo("  Deploy with: rayai serve")
+        click.echo("  Run with: rayai serve")
         click.echo(f"  Test at: POST http://localhost:8000/agents/{agent_name}/chat")
 
     except Exception as e:

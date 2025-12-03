@@ -86,7 +86,7 @@ def init(project_name: str, project_type: str, no_install: bool):
                     click.echo("  pip install -r requirements.txt")
                 click.echo("  # Edit .env file with your API keys")
                 click.echo("  # Create your first agent: rayai create-agent <name>")
-                click.echo("  # Deploy agents: rayai serve")
+                click.echo("  # Run agents: rayai serve")
 
             except Exception as e:
                 click.echo(f"Error: Failed to create project: {e}")

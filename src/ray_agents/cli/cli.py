@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RayAI CLI - Deploy agents and services with Ray Serve
+"""RayAI CLI - Run agents and services with Ray Serve
 
 Usage:
     rayai init <project_name> [--type=agent]
@@ -14,7 +14,7 @@ from .commands import create_agent, init, serve
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
-    """RayAI CLI - Deploy agents and services with Ray Serve"""
+    """RayAI CLI - Run agents and services with Ray Serve"""
     pass
 
 

@@ -1,6 +1,6 @@
 # RayAI Agent Project
 
-A template for building and deploying agents with Ray Serve using the RayAI CLI.
+A template for building and running agents with Ray Serve using the RayAI CLI.
 
 ## Quick Start
 
@@ -29,7 +29,7 @@ A template for building and deploying agents with Ray Serve using the RayAI CLI.
    # - Implement your logic in run()
    ```
 
-5. **Deploy your agents:**
+5. **Run your agents:**
    ```bash
    rayai serve
    ```
@@ -44,9 +44,9 @@ A template for building and deploying agents with Ray Serve using the RayAI CLI.
 ## Available Commands
 
 - **`rayai create-agent <name>`** - Create a new agent
-- **`rayai serve`** - Deploy all agents
-- **`rayai serve --agents agent1,agent2`** - Deploy specific agents
-- **`rayai serve --port=9000`** - Deploy on custom port
+- **`rayai serve`** - Run all agents
+- **`rayai serve --agents agent1,agent2`** - Run specific agents
+- **`rayai serve --port=9000`** - Run on custom port
 - **`rayai serve --<agent-name>-num-cpus=4`** - Override CPU allocation
 - **`rayai serve --<agent-name>-num-gpus=1`** - Override GPU allocation
 - **`rayai serve --<agent-name>-memory=8GB`** - Override memory allocation
