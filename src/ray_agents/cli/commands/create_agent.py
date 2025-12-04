@@ -53,8 +53,7 @@ import ray
 from ray_agents import RayAgent, tool
 
 
-# Optional: Define tools for this agent
-# @tool(desc="Example tool - replace with your own", num_cpus=1)
+# @tool(desc="Example tool description", num_cpus=1)
 # def example_tool(input: str) -> str:
 #     """Process input and return result."""
 #     return f"Processed: {{input}}"
@@ -90,6 +89,8 @@ class {agent_name.title()}(RayAgent):
         # - Build LLM tool schema from tools
         # - Call your LLM
         # - Handle tool calls using self.execute_tools(tool_calls, parallel=True/False)
+        #   tool_calls is a list of tools to execute with their arguments
+        #   Example: [(tool1, {{"arg1": "value1"}}), (tool2, {{"arg2": "value2"}})]
 
         return {{
             "error": "AGENT_NOT_IMPLEMENTED",
