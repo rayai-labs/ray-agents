@@ -16,6 +16,6 @@ repos:
     rev: v1.14.0
     hooks:
       - id: mypy
-        additional_dependencies: []
+        additional_dependencies: [ray]
         args: [--ignore-missing-imports]
         exclude: ^(examples/|cli/templates/)
