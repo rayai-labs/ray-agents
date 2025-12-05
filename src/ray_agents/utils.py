@@ -32,4 +32,4 @@ def execute_tools(
         future = tool._remote_func.remote(**args)
         futures.append(future)
 
-    return ray.get(futures)  # type: ignore[no-any-return]
+    return ray.get(futures)
