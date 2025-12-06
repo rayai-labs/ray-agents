@@ -1,6 +1,6 @@
 # RayAI Agent Project
 
-A template for building and deploying agents with Ray Serve using the RayAI CLI.
+A template for building and running agents with Ray Serve using the RayAI CLI.
 
 ## Quick Start
 
@@ -10,34 +10,31 @@ A template for building and deploying agents with Ray Serve using the RayAI CLI.
    cd <project_name>
    ```
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+   Note: Dependencies are automatically installed. Use `--no-install` flag to skip.
 
-3. **Set up environment (optional):**
+2. **Set up environment (optional):**
    ```bash
    # Create .env file with your API keys and configuration
    ```
 
-4. **Create your first agent:**
+3. **Create your first agent:**
    ```bash
    rayai create-agent <agent_name>
    ```
 
-5. **Implement your agent logic:**
+4. **Implement your agent logic:**
    ```bash
    # Edit agents/<agent_name>/agent.py
    # - Add initialization code in __init__()
    # - Implement your logic in run()
    ```
 
-6. **Deploy your agents:**
+5. **Run your agents:**
    ```bash
    rayai serve
    ```
 
-7. **Test your agent:**
+6. **Test your agent:**
    ```bash
    curl -X POST http://localhost:8000/agents/<agent_name>/chat \
      -H "Content-Type: application/json" \
@@ -47,9 +44,9 @@ A template for building and deploying agents with Ray Serve using the RayAI CLI.
 ## Available Commands
 
 - **`rayai create-agent <name>`** - Create a new agent
-- **`rayai serve`** - Deploy all agents
-- **`rayai serve --agents agent1,agent2`** - Deploy specific agents
-- **`rayai serve --port=9000`** - Deploy on custom port
+- **`rayai serve`** - Run all agents
+- **`rayai serve --agents agent1,agent2`** - Run specific agents
+- **`rayai serve --port=9000`** - Run on custom port
 - **`rayai serve --<agent-name>-num-cpus=4`** - Override CPU allocation
 - **`rayai serve --<agent-name>-num-gpus=1`** - Override GPU allocation
 - **`rayai serve --<agent-name>-memory=8GB`** - Override memory allocation
@@ -81,7 +78,7 @@ my-project/
 
 ## Agent Implementation
 
-Each agent must inherit from `RayAgent` and implement the `run()` method:
+Each agent should inherit from `RayAgent` and implement the `run()` method. RayAgent provides built-in tool management (`register_tools`, `execute_tools`) and ensures a consistent interface across all agents.
 
 ```python
 from ray_agents import RayAgent
@@ -157,6 +154,8 @@ class MyAgent(RayAgent):
 - Tool resources are separate from agent resources
 
 ## Resource Configuration
+
+Specify CPU, GPU, and memory requirements directly in your Python code—no Dockerfiles or Kubernetes manifests needed.
 
 Configure CPU, GPU, memory, and replicas for your agents using two methods:
 

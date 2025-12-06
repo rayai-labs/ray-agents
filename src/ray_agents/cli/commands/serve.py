@@ -28,7 +28,7 @@ DEFAULT_RESOURCES = {"num_cpus": 1, "memory": "2GB", "num_replicas": 1, "num_gpu
 )
 @click.argument("project_path", default=".")
 @click.option("--port", default=8000, help="Port to serve on")
-@click.option("--agents", help="Deploy specific agents (comma-separated)")
+@click.option("--agents", help="Run specific agents (comma-separated)")
 @click.pass_context
 def serve(ctx, project_path: str, port: int, agents: str):
     """Serve agents using Ray Serve."""
@@ -355,7 +355,7 @@ def _print_deployment_success(
     """
     gpu_info = f", {resources['num_gpus']} GPUs" if resources["num_gpus"] > 0 else ""
     click.echo(
-        f"✓ Deployed '{agent_name}': {resources['num_replicas']} replicas, "
+        f"Running '{agent_name}': {resources['num_replicas']} replicas, "
         f"{resources['num_cpus']} CPUs, {resources['memory']}{gpu_info}"
     )
 
